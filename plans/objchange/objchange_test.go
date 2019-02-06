@@ -484,3 +484,79 @@ func TestProposedNewObject(t *testing.T) {
 		})
 	}
 }
+
+func TestAssertObjectCompatible_tmp(t *testing.T) {
+	schema := &configschema.Block{
+		BlockTypes: map[string]*configschema.NestedBlock{
+			"ebs_block_device": &configschema.NestedBlock{
+				Nesting: configschema.NestingSet,
+				Block: configschema.Block{
+					Attributes: map[string]*configschema.Attribute{
+						"encrypted": &configschema.Attribute{
+							Type:     cty.Bool,
+							Optional: true,
+						},
+						"iops": &configschema.Attribute{
+							Type:     cty.Number,
+							Optional: true,
+						},
+						"snapshot_id": &configschema.Attribute{
+							Type:     cty.String,
+							Optional: true,
+						},
+						"volume_size": &configschema.Attribute{
+							Type:     cty.Number,
+							Optional: true,
+							Computed: true,
+						},
+						"volume_type": &configschema.Attribute{
+							Type:     cty.String,
+							Optional: true,
+						},
+						"delete_on_termination": &configschema.Attribute{
+							Type:     cty.Bool,
+							Optional: true,
+						},
+						"device_name": &configschema.Attribute{
+							Type:     cty.String,
+							Required: true,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	prior := cty.ObjectVal(map[string]cty.Value{
+		"ebs_block_device": cty.SetVal([]cty.Value{
+			cty.ObjectVal(map[string]cty.Value{
+				"snapshot_id":           cty.StringVal("snap-0a0f773ba8a07159b"),
+				"device_name":           cty.StringVal("/dev/sda1"),
+				"volume_size":           cty.NumberIntVal(8),
+				"volume_type":           cty.StringVal("standard"),
+				"delete_on_termination": cty.True,
+				"encrypted":             cty.False,
+				"iops":                  cty.NumberIntVal(0),
+			}),
+		}),
+	})
+
+	config := cty.ObjectVal(map[string]cty.Value{
+		"ebs_block_device": cty.SetVal([]cty.Value{
+			cty.ObjectVal(map[string]cty.Value{
+				"snapshot_id":           cty.StringVal("snap-0a0f773ba8a07159b"),
+				"device_name":           cty.StringVal("/dev/sda1"),
+				"volume_size":           cty.NullVal(cty.Number),
+				"volume_type":           cty.NullVal(cty.String),
+				"delete_on_termination": cty.NullVal(cty.Bool),
+				"encrypted":             cty.NullVal(cty.Bool),
+				"iops":                  cty.NullVal(cty.Number),
+			}),
+		}),
+	})
+
+	proposed := ProposedNewObject(schema, prior, config)
+	if !prior.RawEquals(proposed) {
+		t.Fatalf("\nexpected: %#v\ngot:%#v\n", prior, proposed)
+	}
+}
