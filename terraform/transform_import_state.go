@@ -143,7 +143,7 @@ func (n *graphNodeImportState) DynamicExpand(ctx EvalContext) (*Graph, error) {
 			diags = diags.Append(tfdiags.Sourceless(
 				tfdiags.Error,
 				"Resource already managed by Terraform",
-				fmt.Sprintf("Terraform is already managing a remote object for %s. To import to this address you must first remove the existing object from the state.", addr),
+				fmt.Sprintf("Terraform is already managing a remote object for %s. To import to this address you must first remove the existing object from the state by issueing the command \"terraform state rm %s\".", addr, addr.Resource.Resource.Name),
 			))
 			continue
 		}
